@@ -12,8 +12,21 @@ Function Get-EventLogSpan {
 
   
 	.PARAMETER LogsScope
+
   
 	.ExcludeEmptyLogs
+
+
+    .WarningLevel
+
+    
+    .CriticalLevel
+
+    
+    .OutputDirection
+
+    
+    .ColourOutput
 
      
 	.EXAMPLE
@@ -27,6 +40,7 @@ Function Get-EventLogSpan {
 
 	VERSION HISTORY
 	0.3 - 2015-01-20 - first version published on GitHub
+    0.4 - 2015-01-21 - output updated - now include timespan, warning and critical levels added as parameters, output can be coloured
 
    #>
    
@@ -41,13 +55,32 @@ param (
 	[String]$LogsScope="Classic",
 	
 	[parameter(mandatory=$false,Position=2)]
-	[Bool]$ExcludeEmptyLogs=$true
+	[Bool]$ExcludeEmptyLogs=$true,
+
+    [parameter(mandatory=$false,Position=3)]
+    [Int32]$WarningLevelDays=30,
+
+    [parameter(mandatory=$false,Position=4)]
+    [Int32]$CriticalLevelDays=7,
+
+    [parameter(mandatory=$false,Position=5)]
+    [ValidateSet("Console","HTML")]
+    [String]$OutputDirection="Console",
+
+    [parameter(mandatory=$false,Position=6)]
+    [Bool]$ColourOutput=$true
 
 )
 
 Begin {
 
 	    $Results=@()
+
+        $StartTime = Get-Date
+
+        $WarningColor = "Yellow"
+        
+        $CriticalColor = "Red" 
 
 }
 
@@ -67,11 +100,39 @@ Process {
 	$Logs | ForEach {
 	
 		$OldestEventEntryTime = Get-OldestEventTime -LogName $_.LogName.ToString()
+
+        If ($OldestEventEntryTime) {
+
+            $LogTimeSpan = New-TimeSpan -Start $OldestEventEntryTime -End $StartTime
+
+            If ($LogTimeSpan -lt $(New-TimeSpan -Days $WarningLevelDays) -and $LogTimeSpan -gt $(New-TimeSpan -Days $CriticalLevelDays)) {
+
+                $LogSpanStatus = "Warning"
+
+            }
+            elseif ( $LogTimeSpan -lt $(New-TimeSpan -Days $CriticalLevelDays)) {
+
+                $LogSpanStatus = "Critical"
+
+            }
+            else {
+
+                $LogSpanStatus = "Normal"
+
+            }
+
+
+        }
+
+       
 		
 		$hash =  @{ 
 			ComputerName     	= $ComputerName
 			LogName				= $_.LogName
 			OldestEventTime		= $OldestEventEntryTime
+            LogTimeSpan = $LogTimeSpan
+            LogSpanStatus = $LogSpanStatus
+
 		} 
                 
 		$Result = New-Object PSObject -Property $hash 
@@ -89,7 +150,29 @@ Process {
 
 End {
 
-	Return $Results
+    If ($OutputDirection -eq "Console") {
+
+        $Results | ForEach-Object -Process {
+
+        
+            if ($_.LogSpanStatus -eq "Critical" -and $ColourOutput) {
+            
+               Write-ColorOutput -ForeGroundColor $CriticalColor -OutputData $_
+               
+            }
+            elseif ($_.LogSpanStatus -eq "Warning" -and $ColourOutput) {
+
+                Write-ColorOutput -ForeGroundColor $WarningColor -OutputData $_
+                
+            }
+            else {
+
+                Write-Output -InputObject $_
+                
+            }
+        }
+
+    }
 
 }
 
@@ -181,3 +264,35 @@ end {
 
 }
 
+
+function Write-ColorOutput {
+
+param (
+
+
+	[parameter(mandatory=$true,Position=0)]
+	[String]$ForeGroundColor,
+
+    [parameter(mandatory=$true,Position=1)]
+    $OutputData
+
+)
+
+    #Source
+    #http://stackoverflow.com/questions/4647756/is-there-a-way-to-specify-a-font-color-when-using-write-output
+
+    #Modified by Wojciech Sciesinski
+
+    # save the current color
+    $fc = $host.UI.RawUI.ForegroundColor
+
+    # set the new color
+    $host.UI.RawUI.ForegroundColor = $ForegroundColor
+
+    # Write output
+    Write-Output $OutputData
+
+    # restore the original color
+    $host.UI.RawUI.ForegroundColor = $fc
+
+}
