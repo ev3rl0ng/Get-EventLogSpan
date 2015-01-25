@@ -51,6 +51,7 @@ Function Get-EventLogSpan {
     0.4.0 - 2015-01-21 - output updated - now include timespan, warning and critical levels added as parameters, output can be coloured
 	0.5.0 - 2015-01-25 - checking not classic logs corrected,progress indicator added, lots improvments added 
 	0.5.1 - 2015-01-26 - checking oldest log corrected for remote computers
+	0.5.2 - 2015-01-26 - checking using Log Parser corrected, output for status for empty logs corrected
 
    #>
    
@@ -137,6 +138,8 @@ Process {
 			
 			}
 		}
+		
+		$LogSpanStatus = "Empty"
 
         If ($OldestEventEntryTime -ne $null ) {
 
@@ -152,11 +155,6 @@ Process {
                 $LogSpanStatus = "Critical"
 
             }
-			elseif ( $LogTimeSpan -eq $null ) {
-			
-				$LogSpanStatus = "Empty"
-			
-			}
             else {
 
                 $LogSpanStatus = "Normal"
@@ -292,7 +290,7 @@ process {
 	
 		If ($Method -eq "LogParser") {
 		
-			I$rtnVal = $LogQuery.Execute($SQLQuery, $InputFormat)
+			$rtnVal = $LogQuery.Execute($SQLQuery, $InputFormat)
 		
 			do{
 				$lp_return = @{}
