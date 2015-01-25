@@ -1,7 +1,7 @@
 Function Get-EventLogSpan {
 
 #Requires -Version 2.0 
-#Set-strictmode -version 2.0
+
 [CmdletBinding()] 
 
 
@@ -47,13 +47,14 @@ Function Get-EventLogSpan {
 	BASE REPOSITORY: https://github.com/it-praktyk/Get-EventLogSpan
 
 	VERSION HISTORY
-	0.3 - 2015-01-20 - first version published on GitHub
-    0.4 - 2015-01-21 - output updated - now include timespan, warning and critical levels added as parameters, output can be coloured
-	0.5 - 2015-01-25 - checking not classic logs corrected,progress indicator added, lots improvments added 
+	0.3.0 - 2015-01-20 - first version published on GitHub
+    0.4.0 - 2015-01-21 - output updated - now include timespan, warning and critical levels added as parameters, output can be coloured
+	0.5.0 - 2015-01-25 - checking not classic logs corrected,progress indicator added, lots improvments added 
+	0.5.1 - 2015-01-26 - checking oldest log corrected for remote computers
 
    #>
    
-#>
+
 
 param (
 	[parameter(mandatory=$false,Position=0)]
@@ -114,25 +115,25 @@ Process {
 	
 	$LogsCount = ($Logs | Measure-Object).Count
 	
-	$Logs | ForEach {
+	$Logs | ForEach-Object -Process {
 	
 		$LogTimeSpan = 0
 	
 		If ( $Scope -eq "Classic" ) {
 	
-			$OldestEventEntryTime = Get-OldestEventTime -LogName $_.LogName.ToString() -Method LogParser
+			$OldestEventEntryTime = Get-OldestEventTime -ComputerName $ComputerName -LogName $_.LogName.ToString() -Method LogParser -Verbose:($PSBoundParameters['Verbose'] -eq $true)
 			
 		}
 		Else{
 		
 			If ($_.IsClassicLog -and $LogParserInstalled ) {
 			
-				$OldestEventEntryTime = Get-OldestEventTime -LogName $_.LogName.ToString() -Method LogParser
+				$OldestEventEntryTime = Get-OldestEventTime -ComputerName $ComputerName -LogName $_.LogName.ToString() -Method LogParser -Verbose:($PSBoundParameters['Verbose'] -eq $true)
 			
 			}
 			Else {
 			
-				$OldestEventEntryTime = Get-OldestEventTime -LogName $_.LogName.ToString() -Method PowerShell
+				$OldestEventEntryTime = Get-OldestEventTime -ComputerName $ComputerName -LogName $_.LogName.ToString() -Method PowerShell -Verbose:($PSBoundParameters['Verbose'] -eq $true)
 			
 			}
 		}
@@ -151,7 +152,7 @@ Process {
                 $LogSpanStatus = "Critical"
 
             }
-			elseif ( $LogTimeSpan -eq 0 ) {
+			elseif ( $LogTimeSpan -eq $null ) {
 			
 				$LogSpanStatus = "Empty"
 			
@@ -275,12 +276,11 @@ begin {
 		$InputFormat.direction="FW"
 		$InputFormat.stringsSep="|"
 		$InputFormat.binaryFormat="PRINT"
-		$InputFormat.ignoreMessageErrors=1
-	
-
-
+		$InputFormat.ignoreMessageErrors=0
 
 		$SQLQuery = "SELECT TOP 1 TimeGenerated FROM '{1}' ORDER BY TimeGenerated ASC" -f $ComputerName,$LogName
+		
+		Write-Verbose $SQLQuery
 		
 	}
 		
@@ -331,6 +331,8 @@ process {
 	Finally {
 			
 			$Result = New-Object PSObject -Property $lp_return
+			
+			Write-Verbose $Result
 	
 	}
 	
