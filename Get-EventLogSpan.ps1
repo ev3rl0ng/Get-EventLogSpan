@@ -40,8 +40,8 @@ Function Get-EventLogSpan {
 
 	
 	.LogParserInstalled
-	Use this (set to $false) if Log Parser is not installed, the native PowerShell cmdlet will be used to parse all event logs. 
-	If set to $false log parsing will be much slower - due to PowerShell  for big event logs 
+	Use this parameter (set to $false) if Log Parser is not installed, the native PowerShell cmdlet will be used to parse all event logs. 
+	If set to $false log parsing will be much slower - due to use PowerShell native command to find the oldes log event entry. 
 
      
 	.EXAMPLE
@@ -70,6 +70,7 @@ Function Get-EventLogSpan {
     0.5.3 - 2015-02-05 - double quoute to single quote changed for static strings, minor updates
     0.6.0 - 2015-02-06 - check if .Net Framework 3.5 is installed - needed for Get-WinEvent cmdlet
     0.6.1 - 2015-02-09 - help updated
+    0.6.2 - 2015-02-09 - script updated due to warning displayed by Script Analyzer e.g. positional parameter changed to named etc.
 
     TODO
     - information that script need be running as administrator
@@ -153,7 +154,7 @@ Process {
 
     Else {
 
-        Write-Error "This function requires Microsoft .NET Framework version 3.5 or greater."
+        Write-Error -Message "This function requires Microsoft .NET Framework version 3.5 or greater."
 
         Break
 
@@ -208,7 +209,6 @@ Process {
 
 
         }
-
        
 		
 		$hash =  @{ 
@@ -219,9 +219,9 @@ Process {
             LogSpanStatus		= $LogSpanStatus
 		} 
                 
-		$Result = New-Object PSObject -Property $hash 
+		$Result = New-Object -TypeName PSObject -Property $hash 
 				
-		Write-Verbose $Result
+		Write-Verbose -Message $Result
 		
 		If (($Result.OldestEventTime -ne $null) -or  !$ExcludeEmptyLogs) {
 				
@@ -325,7 +325,7 @@ begin {
 
 		$SQLQuery = "SELECT TOP 1 TimeGenerated FROM '{1}' ORDER BY TimeGenerated ASC" -f $ComputerName,$LogName
 		
-		Write-Verbose $SQLQuery
+		Write-Verbose -Message "Query used for logparser: $SQLQuery"
 		
 	}
 		
@@ -369,15 +369,15 @@ process {
 
 	catch {
 		
-		Write-Verbose "The log $LogName on $ComputerName is unavailable or empty."
+		Write-Verbose -Message "The log $LogName on $ComputerName is unavailable or empty."
 
 	}
 	
 	Finally {
 			
-			$Result = New-Object PSObject -Property $lp_return
+			$Result = New-Object -TypeName PSObject -Property $lp_return
 			
-			Write-Verbose $Result
+			Write-Verbose -Message $Result
 	
 	}
 	
@@ -417,7 +417,7 @@ param (
     $host.UI.RawUI.ForegroundColor = $ForegroundColor
 
     # Write output
-    Write-Output $OutputData
+    Write-Output -InputObject $OutputData
 
     # restore the original color
     $host.UI.RawUI.ForegroundColor = $fc
@@ -430,7 +430,7 @@ function Test-Key([string]$path, [string]$key) {
     #Source
     #http://blog.smoothfriction.nl/archive/2011/01/18/powershell-detecting-installed-net-versions.aspx
 
-    if(!(Test-Path $path)) { return $false }
-    if ((Get-ItemProperty $path).$key -eq $null) { return $false }
+    if(!(Test-Path -Path $path)) { return $false }
+    if ((Get-ItemProperty -Path $path).$key -eq $null) { return $false }
     return $true
 }
