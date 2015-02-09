@@ -1,43 +1,58 @@
 Function Get-EventLogSpan {
 
-#Requires -Version 2.0 
-
-[CmdletBinding()] 
-
-
 <#
 	.SYNOPSIS
-	Function for veryfing Windows events log span
+	Function for veryfing Windows events log span - how old is the oldest available log event entry
 	
 	.DESCRIPTION
-	As a result for this function you receive range between the oldest event log entry and the when the script was startud
+	As a result for this function you receive range between the oldest event log entry and the when the script was started - eg. 3 days 7 hours ...
   
 	.PARAMETER ComputerName
-	Computer which need to queried
+	Computer which need to queried. 
   
 	.PARAMETER LogsScope
-	You c
+	You can select between Classic and All - default is Classic,
+    For basic installation Windows Server 2008 R2 these logs are: Application, Security, Setup, System, Forwarded Events. 
+    All logs means that also "Applications and Services Logs" will be included - query all logs can be time consuming because LogParse can't be used for it.
   
 	.ExcludeEmptyLogs
+    By default empty logs are excluded from results.
 
 
-    .WarningLevel
+    .WarningLevelDays
+    The amount od days for which log can be marked in results as Warning if the span of logs is smaller than warning level.
+    Default warning level is set to 30 days.
 
     
-    .CriticalLevel
+    .CriticalLevelDays
+    The amount od days for which log can be marked in results as Critical if the span of logs is smaller than warning level.
+    Default warning level is set to 7 days.
 
     
     .OutputDirection
+    Default output direction is Console - result is returned as PowerShell object so can be simply redirected to pipe.
+    In the future output to HTML file and email will be implemented also.
 
     
     .ColourOutput
+    By default output will be displayed using different colors for Critical and Warning log span levels. 
+    In thi moment colors can be changed only by editing source code.
+
 	
 	.LogParserInstalled
-	Use this if Log Parser is not installed, the native PowerShell cmdlet will be used to parse all event logs. 
-	If set to true log parsing will be very slower for big event logs 
+	Use this (set to $false) if Log Parser is not installed, the native PowerShell cmdlet will be used to parse all event logs. 
+	If set to $false log parsing will be much slower - due to PowerShell  for big event logs 
 
      
 	.EXAMPLE
+    
+    Get-EventLogSpan -ComputerName SRV087.MYDOMAIN.LOCAL -Scope Classic -WarningLevelDays 14
+
+
+    .LINK
+    https://github.com/it-praktyk/Get-EventLogSpan
+
+
 
       
 	AUTHOR: Wojciech Sciesinski, wojciech[at]sciesinski[dot]net
@@ -53,8 +68,21 @@ Function Get-EventLogSpan {
 	0.5.1 - 2015-01-26 - checking oldest log corrected for remote computers
 	0.5.2 - 2015-01-26 - checking using Log Parser corrected, output for status for empty logs corrected
     0.5.3 - 2015-02-05 - double quoute to single quote changed for static strings, minor updates
+    0.6.0 - 2015-02-06 - check if .Net Framework 3.5 is installed - needed for Get-WinEvent cmdlet
+    0.6.1 - 2015-02-09 - help updated
+
+    TODO
+    - information that script need be running as administrator
+    - HTML output need to be implemented
+    - email output need to bi implemented (?)
+    - check if .Net 3.5 is installed - http://blog.smoothfriction.nl/archive/2011/01/18/powershell-detecting-installed-net-versions.aspx - needed by Get-WinEvent
 
    #>
+
+
+#Requires -Version 2.0 
+
+[CmdletBinding()] 
    
 
 
@@ -83,14 +111,14 @@ param (
     [parameter(mandatory=$false,Position=6)]
     [Bool]$ColourOutput=$true,
 	
-	[parameter (mandatory=$false,Position=7)]
+	[parameter(mandatory=$false,Position=7)]
 	[Bool]$LogParserInstalled=$true
 
 )
 
 Begin {
 
-		Set-StrictMode -Version 2		
+		#Set-StrictMode -Version 2		
 
 	    $Results=@()
 
@@ -102,22 +130,36 @@ Begin {
 		
 		$i=0
 
+        
+
 }
 
 Process {
-	
-	if ($LogsScope -eq 'Classic') {
 
-		$Logs = Get-WinEvent -ComputerName $ComputerName -ListLog * -ErrorAction SilentlyContinue  |  Where-Object { $_.IsClassicLog }
+    If (Test-Key "HKLM:\Software\Microsoft\NET Framework Setup\NDP\v3.5" "Install") {
+	
+	    if ($LogsScope -eq 'Classic') {
+
+		    $Logs = Get-WinEvent -ComputerName $ComputerName -ListLog * -ErrorAction SilentlyContinue  |  Where-Object { $_.IsClassicLog }
 		
-	}
-	Else {
+	    }
+	    Else {
 	
-		$Logs = Get-WinEvent -ComputerName $ComputerName -ListLog * -ErrorAction SilentlyContinue
+		    $Logs = Get-WinEvent -ComputerName $ComputerName -ListLog * -ErrorAction SilentlyContinue
 	
-	}
+	    }
+
+    }
+
+    Else {
+
+        Write-Error "This function requires Microsoft .NET Framework version 3.5 or greater."
+
+        Break
+
+    }
 	
-	$LogsCount = ($Logs | Measure-Object).Count
+	    $LogsCount = ($Logs | Measure-Object).Count
 	
 	$Logs | ForEach-Object -Process {
 	
@@ -246,7 +288,7 @@ Function Get-OldestEventTime {
 param (
 
 	[parameter(mandatory=$false,Position=0)]
-	[String]$ComputerName="localhost",
+	[String]$ComputerName='localhost',
 
 	[parameter(mandatory=$false,Position=1,ValueFromPipeline=$false)]
 	[String]$LogName,
@@ -293,7 +335,7 @@ process {
 	
 	try{
 	
-		If ($Method -eq "LogParser") {
+		If ($Method -eq 'LogParser') {
 		
 			$rtnVal = $LogQuery.Execute($SQLQuery, $InputFormat)
 		
@@ -380,4 +422,15 @@ param (
     # restore the original color
     $host.UI.RawUI.ForegroundColor = $fc
 
+}
+
+
+function Test-Key([string]$path, [string]$key) {
+
+    #Source
+    #http://blog.smoothfriction.nl/archive/2011/01/18/powershell-detecting-installed-net-versions.aspx
+
+    if(!(Test-Path $path)) { return $false }
+    if ((Get-ItemProperty $path).$key -eq $null) { return $false }
+    return $true
 }
