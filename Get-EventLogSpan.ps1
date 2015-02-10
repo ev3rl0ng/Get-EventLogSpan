@@ -85,6 +85,7 @@ Function Get-EventLogSpan {
     0.6.1 - 2015-02-09 - help updated
     0.6.2 - 2015-02-09 - script updated due to warning displayed by Script Analyzer e.g. positional parameter changed to named etc.
     0.7.0 - 2015-02-10 - minor bugs corrected, tabs replaced to 4 spaces to normalize looks between editors, first version published on TechNet
+    0.8.0 - 2015-02-10 - query used for query data from remote computers by logparser corrected
 
     TODO
     - information that script need be running as administrator
@@ -343,7 +344,18 @@ begin {
         $InputFormat.binaryFormat="PRINT"
         $InputFormat.ignoreMessageErrors=0
 
-        $SQLQuery = "SELECT TOP 1 TimeGenerated FROM '{1}' ORDER BY TimeGenerated ASC" -f $ComputerName,$LogName
+        If ( $ComputerName -eq 'localhost' ) {
+
+            [String]$LogToQuery = $LogName
+
+        }
+        Else {
+
+            [String]$LogToQuery = '\\' + $ComputerName + '\' + $LogName
+
+        }
+
+        $SQLQuery = "SELECT TOP 1 TimeGenerated FROM '{0}' ORDER BY TimeGenerated ASC" -f $LogToQuery
         
         Write-Verbose -Message "Query used for logparser: $SQLQuery"
         
