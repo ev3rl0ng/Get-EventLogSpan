@@ -1,0 +1,16 @@
+# VERSIONS
+- 0.3.0 - 2015-01-20 - first version published on GitHub
+- 0.4.0 - 2015-01-21 - output updated - now include timespan, warning and critical levels added as parameters, output can be coloured
+- 0.5.0 - 2015-01-25 - checking not classic logs corrected,progress indicator added, lots improvments added
+- 0.5.1 - 2015-01-26 - checking oldest log corrected for remote computers
+- 0.5.2 - 2015-01-26 - checking using Log Parser corrected, output for status for empty logs corrected
+- 0.5.3 - 2015-02-05 - double quoute to single quote changed for static strings, minor updates
+- 0.6.0 - 2015-02-06 - check if .Net Framework 3.5 is installed - needed for Get-WinEvent cmdlet
+- 0.6.1 - 2015-02-09 - help updated
+- 0.6.2 - 2015-02-09 - script updated due to warning displayed by Script Analyzer e.g. positional parameter changed to named etc.
+- 0.7.0 - 2015-02-10 - minor bugs corrected, tabs replaced to 4 spaces to normalize looks between editors, first version published on TechNet
+- 0.8.0 - 2015-02-10 - query used for query data from remote computers by logparser corrected
+- 0.9.0 - 2016-02-17 - Thomas Rhoads (ev3rl0ng[at]gmail[dot]com) - added check for administrator token.
+- 0.9.1 - 2016-02-17 - Thomas Rhoads (ev3rl0ng[at]gmail[dot]com) - moved .net check to Begin section and added support for .Net > 3.5
+- 0.9.2 - 2016-02-17 - Thomas Rhoads (ev3rl0ng[at]gmail[dot]com) - Removed Test-Key function as it is no longer used.
+- 1.0.0 - 2016-02-17 - The license changed to MIT, the parameter OutputDirection removed, the function reformatted, by default output is returned as PowerShell object
