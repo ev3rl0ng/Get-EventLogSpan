@@ -40,7 +40,7 @@ Function Get-EventLogSpan {
      
     .EXAMPLE
     
-    Get-EventLogSpan -ComputerName localhost -Scope Classic -WarningLevelDays 14
+    Get-EventLogSpan -ComputerName localhost -LogsScope Classic -WarningLevelDays 14
 
     LogName         : Application
     LogSpanStatus   : Normal
@@ -86,12 +86,13 @@ Function Get-EventLogSpan {
     0.6.2 - 2015-02-09 - script updated due to warning displayed by Script Analyzer e.g. positional parameter changed to named etc.
     0.7.0 - 2015-02-10 - minor bugs corrected, tabs replaced to 4 spaces to normalize looks between editors, first version published on TechNet
     0.8.0 - 2015-02-10 - query used for query data from remote computers by logparser corrected
+    0.9.0 - 2016-02-17 - Thomas Rhoads (ev3rl0ng[at]gmail[dot]com) - added check for administrator token.
+    0.9.1 - 2016-02-17 - Thomas Rhoads (ev3rl0ng[at]gmail[dot]com) - moved .net check to Begin section and added support for .Net > 3.5
+    0.9.2 - 2016-02-17 - Thomas Rhoads (ev3rl0ng[at]gmail[dot]com) - Removed Test-Key function as it is no longer used.
 
     TODO
-    - information that script need be running as administrator
     - HTML output need to be implemented
     - email output need to bi implemented (?)
-    - check if .Net newer than 3.5 is installed - http://blog.smoothfriction.nl/archive/2011/01/18/powershell-detecting-installed-net-versions.aspx - needed by Get-WinEvent
 	
 	DISCLAIMER
 	This script is provided “as-is” and are to be used on your own responsibility. I do not accept any liability nor do I take any responsibility for using these scripts in your environment. 
@@ -138,6 +139,42 @@ Begin {
 
         #Set-StrictMode -Version 2      
 
+        # Get currently logged on principal.
+        $currentPrincipal = New-Object Security.Principal.WindowsPrincipal( [Security.Principal.WindowsIdentity]::GetCurrent() )
+    
+        # Check for Administrator Rights bit.
+        If (!$currentPrincipal.IsInRole( [Security.Principal.WindowsBuiltInRole]::Administrator )) {
+
+            Write-Error -Message "This function requires elevation. Please run PowerShell as an Administrator"
+        
+            Break    
+        }
+
+        $currentPrincipal = $null
+
+        # Iterate through all .NET versions installed and determine whether we have a satisfactory version.
+        # Based on answer at: http://stackoverflow.com/questions/3487265/powershell-script-to-return-versions-of-net-framework-on-a-machine
+        $boolNetFXVersionOK = $false
+
+        Get-ChildItem 'HKLM:\SOFTWARE\Microsoft\NET Framework Setup\NDP' -recurse |
+        Get-ItemProperty -name Version,Release -EA 0 |
+        Where { $_.PSChildName -match '^(?!S)\p{L}'} |
+        Select PSChildName, Version, Release |
+        ForEach-Object {
+            if ($_.Version -gt 3.5) {
+                $boolNetFXVersionOK = $true
+            }
+        }
+
+        If (!$boolNetFXVersionOK) {
+
+            Write-Error -Message "This function requires Microsoft .NET Framework version 3.5 or greater."
+
+            Break
+        }
+
+        $boolNetFXVersionOK = $null
+
         $Results=@()
 
         $StartTime = Get-Date
@@ -147,32 +184,19 @@ Begin {
         $CriticalColor = 'Red' 
         
         $i=0
-
 }
 
 Process {
 
-    If (Test-Key "HKLM:\Software\Microsoft\NET Framework Setup\NDP\v3.5" "Install") {
-    
-        if ($LogsScope -eq 'Classic') {
+    If ($LogsScope -eq 'Classic') {
 
-            $Logs = Get-WinEvent -ComputerName $ComputerName -ListLog * -ErrorAction SilentlyContinue  |  Where-Object { $_.IsClassicLog }
+        $Logs = Get-WinEvent -ComputerName $ComputerName -ListLog * -ErrorAction SilentlyContinue  |  Where-Object { $_.IsClassicLog }
         
-        }
-        Else {
-    
-            $Logs = Get-WinEvent -ComputerName $ComputerName -ListLog * -ErrorAction SilentlyContinue
-    
-        }
-
     }
-
     Else {
-
-        Write-Error -Message "This function requires Microsoft .NET Framework version 3.5 or greater."
-
-        Break
-
+    
+        $Logs = Get-WinEvent -ComputerName $ComputerName -ListLog * -ErrorAction SilentlyContinue
+    
     }
     
     $LogsCount = ($Logs | Measure-Object).Count
@@ -452,15 +476,4 @@ param (
     # restore the original color
     $host.UI.RawUI.ForegroundColor = $fc
 
-}
-
-
-function Test-Key([string]$path, [string]$key) {
-
-    #Source
-    #http://blog.smoothfriction.nl/archive/2011/01/18/powershell-detecting-installed-net-versions.aspx
-
-    if(!(Test-Path -Path $path)) { return $false }
-    if ((Get-ItemProperty -Path $path).$key -eq $null) { return $false }
-    return $true
 }
