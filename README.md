@@ -1,15 +1,97 @@
-# PowerShell function Get-EventLogSpan
+# Get-EventLogSpan
+## SYNOPSIS
 
-is intended to check how old is the oldest event entry in event log.
-
-Event logs can be parsed using Log Parser 2.2 or Windows PowerShell Get-WinEvent cmdlet from local or remote machine.
+Get-EventLogSpan [[-ComputerName] <string>] [[-LogsScope] <string>] [[-ExcludeEmptyLogs] <bool>] [[-WarningLevelDays] <int>] [[-CriticalLevelDays] <int>] [[-ColourOutput] <bool>] [[-LogParserInstalled] <bool>] [<CommonParameters>]
 
 
-As the function result is returned PowerShell object which contain data like below
-LogName				: Application
-LogSpanStatus		: Normal
-ComputerName		: Localhost
-OldestEventTime		: 2013-12-06 00:45:13
-LogTimeSpan			: 430.23:02:55.7739014
+## SYNTAX
+```powershell
+syntaxItem                                                                                                  
 
-Function contributed also to Technet Gallery https://gallery.technet.microsoft.com/PowerShell-Function-to-2ea8205a
+----------                                                                                                  
+
+{@{name=Get-EventLogSpan; CommonParameters=True; WorkflowCommonParameters=False; parameter=System.Object[]}}
+```
+
+## DESCRIPTION
+
+
+## PARAMETERS
+### -ColourOutput &lt;bool&gt;
+
+```
+Position?                    5
+Accept pipeline input?       false
+Parameter set name           (All)
+Aliases                      None
+Dynamic?                     false
+```
+ 
+### -ComputerName &lt;string&gt;
+
+```
+Position?                    0
+Accept pipeline input?       false
+Parameter set name           (All)
+Aliases                      None
+Dynamic?                     false
+```
+ 
+### -CriticalLevelDays &lt;int&gt;
+
+```
+Position?                    4
+Accept pipeline input?       false
+Parameter set name           (All)
+Aliases                      None
+Dynamic?                     false
+```
+ 
+### -ExcludeEmptyLogs &lt;bool&gt;
+
+```
+Position?                    2
+Accept pipeline input?       false
+Parameter set name           (All)
+Aliases                      None
+Dynamic?                     false
+```
+ 
+### -LogParserInstalled &lt;bool&gt;
+
+```
+Position?                    6
+Accept pipeline input?       false
+Parameter set name           (All)
+Aliases                      None
+Dynamic?                     false
+```
+ 
+### -LogsScope &lt;string&gt;
+
+```
+Position?                    1
+Accept pipeline input?       false
+Parameter set name           (All)
+Aliases                      None
+Dynamic?                     false
+```
+ 
+### -WarningLevelDays &lt;int&gt;
+
+```
+Position?                    3
+Accept pipeline input?       false
+Parameter set name           (All)
+Aliases                      None
+Dynamic?                     false
+```
+
+## INPUTS
+None
+
+
+## NOTES
+
+
+## EXAMPLES
