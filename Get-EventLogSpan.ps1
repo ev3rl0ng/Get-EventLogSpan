@@ -25,11 +25,7 @@ Function Get-EventLogSpan {
     .CriticalLevelDays
     The amount od days for which log can be marked in results as Critical if the span of logs is smaller than warning level.
     Default warning level is set to 7 days.
-    
-    .OutputDirection
-    Default output direction is Console - result is returned as PowerShell object so can be simply redirected to pipe.
-    In the future output to HTML file and email will be implemented also.
-    
+        
     .ColourOutput
     By default output will be displayed using different colors for Critical and Warning log span levels. 
     In thi moment colors can be changed only by editing source code.
@@ -63,41 +59,42 @@ Function Get-EventLogSpan {
     .LINK
     https://github.com/it-praktyk/Get-EventLogSpan
 
-	.LINK
-	https://www.linkedin.com/in/sciesinskiwojciech
-	
+    .LINK
+    https://www.linkedin.com/in/sciesinskiwojciech
+    
     .NOTES
-	
+    
     AUTHOR: Wojciech Sciesinski, wojciech[at]sciesinski[dot]net
-	        
+    
+	CONTRIBUTORS:
+	- Thomas Rhoads, ev3rl0ng[at]gmail[dot]com
+	
     KEYWORDS: Windows, PowerShell, EventLogs
    
     BASE REPOSITORY: https://github.com/it-praktyk/Get-EventLogSpan
 
     VERSION HISTORY
-    0.3.0 - 2015-01-20 - first version published on GitHub
-    0.4.0 - 2015-01-21 - output updated - now include timespan, warning and critical levels added as parameters, output can be coloured
-    0.5.0 - 2015-01-25 - checking not classic logs corrected,progress indicator added, lots improvments added 
-    0.5.1 - 2015-01-26 - checking oldest log corrected for remote computers
-    0.5.2 - 2015-01-26 - checking using Log Parser corrected, output for status for empty logs corrected
-    0.5.3 - 2015-02-05 - double quoute to single quote changed for static strings, minor updates
-    0.6.0 - 2015-02-06 - check if .Net Framework 3.5 is installed - needed for Get-WinEvent cmdlet
-    0.6.1 - 2015-02-09 - help updated
-    0.6.2 - 2015-02-09 - script updated due to warning displayed by Script Analyzer e.g. positional parameter changed to named etc.
-    0.7.0 - 2015-02-10 - minor bugs corrected, tabs replaced to 4 spaces to normalize looks between editors, first version published on TechNet
-    0.8.0 - 2015-02-10 - query used for query data from remote computers by logparser corrected
-    0.9.0 - 2016-02-17 - Thomas Rhoads (ev3rl0ng[at]gmail[dot]com) - added check for administrator token.
-    0.9.1 - 2016-02-17 - Thomas Rhoads (ev3rl0ng[at]gmail[dot]com) - moved .net check to Begin section and added support for .Net > 3.5
-    0.9.2 - 2016-02-17 - Thomas Rhoads (ev3rl0ng[at]gmail[dot]com) - Removed Test-Key function as it is no longer used.
-
-    TODO
-    - HTML output need to be implemented
-    - email output need to bi implemented (?)
+    - 0.3.0 - 2015-01-20 - first version published on GitHub
+    - 0.4.0 - 2015-01-21 - output updated - now include timespan, warning and critical levels added as parameters, output can be coloured
+    - 0.5.0 - 2015-01-25 - checking not classic logs corrected,progress indicator added, lots improvments added 
+    - 0.5.1 - 2015-01-26 - checking oldest log corrected for remote computers
+    - 0.5.2 - 2015-01-26 - checking using Log Parser corrected, output for status for empty logs corrected
+    - 0.5.3 - 2015-02-05 - double quoute to single quote changed for static strings, minor updates
+    - 0.6.0 - 2015-02-06 - check if .Net Framework 3.5 is installed - needed for Get-WinEvent cmdlet
+    - 0.6.1 - 2015-02-09 - help updated
+    - 0.6.2 - 2015-02-09 - script updated due to warning displayed by Script Analyzer e.g. positional parameter changed to named etc.
+    - 0.7.0 - 2015-02-10 - minor bugs corrected, tabs replaced to 4 spaces to normalize looks between editors, first version published on TechNet
+    - 0.8.0 - 2015-02-10 - query used for query data from remote computers by logparser corrected
+    - 0.9.0 - 2016-02-17 - Thomas Rhoads (ev3rl0ng[at]gmail[dot]com) - added check for administrator token.
+    - 0.9.1 - 2016-02-17 - Thomas Rhoads (ev3rl0ng[at]gmail[dot]com) - moved .net check to Begin section and added support for .Net > 3.5
+    - 0.9.2 - 2016-02-17 - Thomas Rhoads (ev3rl0ng[at]gmail[dot]com) - Removed Test-Key function as it is no longer used.
+	- 1.0.0 - 2016-02-17 - The license changed to MIT, the parameter OutputDirection removed, the function reformatted, by default output 
 	
-	DISCLAIMER
-	This script is provided “as-is” and are to be used on your own responsibility. I do not accept any liability nor do I take any responsibility for using these scripts in your environment. 
-	Please use with caution and always test them before usage!
-
+	LICENSE
+	Copyright (c) 2016 Wojciech Sciesinski
+    This function is licensed under The MIT License (MIT)
+    Full license text: https://opensource.org/licenses/MIT
+	
    #>
 
 
@@ -122,15 +119,10 @@ param (
     [parameter(mandatory=$false,Position=4)]
     [Int32]$CriticalLevelDays=7,
 
-    #HTML Output is not implemented yet 
     [parameter(mandatory=$false,Position=5)]
-    [ValidateSet('Console','HTML')]
-    [String]$OutputDirection='Console',
-
-    [parameter(mandatory=$false,Position=6)]
-    [Bool]$ColourOutput=$true,
+    [Bool]$ColourOutput=$false,
     
-    [parameter(mandatory=$false,Position=7)]
+    [parameter(mandatory=$false,Position=6)]
     [Bool]$LogParserInstalled=$true
 
 )
@@ -157,9 +149,9 @@ Begin {
         $boolNetFXVersionOK = $false
 
         Get-ChildItem 'HKLM:\SOFTWARE\Microsoft\NET Framework Setup\NDP' -recurse |
-        Get-ItemProperty -name Version,Release -EA 0 |
-        Where { $_.PSChildName -match '^(?!S)\p{L}'} |
-        Select PSChildName, Version, Release |
+        Get-ItemProperty -name Version,Release -ErrorAction SilentlyContinue |
+        Where-Object -FilterScript { $_.PSChildName -match '^(?!S)\p{L}'} |
+        Select-Object Property PSChildName, Version, Release |
         ForEach-Object {
             if ($_.Version -gt 3.5) {
                 $boolNetFXVersionOK = $true
@@ -246,7 +238,7 @@ Process {
         
         $LogSpanStatus = 'Empty'
 
-        If ($OldestEventEntryTime -ne $null ) {
+        If ($OldestEventEntryTime) {
 
             $LogTimeSpan = New-TimeSpan -Start $OldestEventEntryTime -End $StartTime
 
@@ -280,7 +272,7 @@ Process {
                 
         Write-Verbose -Message $Result
         
-        If (($Result.OldestEventTime -ne $null) -or  !$ExcludeEmptyLogs) {
+        If (($Result.OldestEventTime) -or  !$ExcludeEmptyLogs) {
                 
             $Results+=$Result
         }
@@ -293,10 +285,9 @@ Process {
 
 End {
 
-    If ($OutputDirection -eq 'Console') {
-
         $Results | ForEach-Object -Process {
-
+		
+		If ( $ColorOutput) {
         
             if ($_.LogSpanStatus -eq 'Critical' -and $ColourOutput) {
             
@@ -314,15 +305,13 @@ End {
                 
             }
         }
-
-    }
-    Else {
-    
-        Write-Host -Message "Sorry, HTML output is not implemented yet. If needed please use ConvertTo-HTML cmdlet in pipeline."
-        
-        #$Results | ConvertTo-HTML | OUT-FILE ".\result.htm"
-    
-    }
+		
+		}
+		Else {
+		
+			Return $Results
+		
+		}
 
 }
 
@@ -356,8 +345,7 @@ begin {
     
         $InputFormat = New-Object -ComObject "MSUtil.LogQuery.EventLogInputFormat"
 
-        $OutputFormat = New-Object -ComObject "MSUtil.LogQuery.NativeOutputFormat"
-    
+        
         $InputFormat.fullText=1
         $InputFormat.resolveSIDs=0
         $InputFormat.formatMsg=1
