@@ -86,9 +86,9 @@ Function Get-EventLogSpan {
     0.6.2 - 2015-02-09 - script updated due to warning displayed by Script Analyzer e.g. positional parameter changed to named etc.
     0.7.0 - 2015-02-10 - minor bugs corrected, tabs replaced to 4 spaces to normalize looks between editors, first version published on TechNet
     0.8.0 - 2015-02-10 - query used for query data from remote computers by logparser corrected
+    0.9.0 - 2016-02-17 - Thomas Rhoads (ev3rl0ng[at]gmail[dot]com) - added check for administrator token.
 
     TODO
-    - information that script need be running as administrator
     - HTML output need to be implemented
     - email output need to bi implemented (?)
     - check if .Net newer than 3.5 is installed - http://blog.smoothfriction.nl/archive/2011/01/18/powershell-detecting-installed-net-versions.aspx - needed by Get-WinEvent
@@ -138,6 +138,17 @@ Begin {
 
         #Set-StrictMode -Version 2      
 
+        # Get currently logged on principal.
+        $currentPrincipal = New-Object Security.Principal.WindowsPrincipal( [Security.Principal.WindowsIdentity]::GetCurrent() )
+    
+        # Check for Administrator Rights bit.
+        If (!$currentPrincipal.IsInRole( [Security.Principal.WindowsBuiltInRole]::Administrator )) {
+
+            Write-Error -Message "This function requires elevation. Please run PowerShell as an Administrator"
+        
+            Break    
+        }
+
         $Results=@()
 
         $StartTime = Get-Date
@@ -147,7 +158,6 @@ Begin {
         $CriticalColor = 'Red' 
         
         $i=0
-
 }
 
 Process {
