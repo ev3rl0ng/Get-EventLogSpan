@@ -88,6 +88,7 @@ Function Get-EventLogSpan {
     0.8.0 - 2015-02-10 - query used for query data from remote computers by logparser corrected
     0.9.0 - 2016-02-17 - Thomas Rhoads (ev3rl0ng[at]gmail[dot]com) - added check for administrator token.
     0.9.1 - 2016-02-17 - Thomas Rhoads (ev3rl0ng[at]gmail[dot]com) - moved .net check to Begin section and added support for .Net > 3.5
+    0.9.2 - 2016-02-17 - Thomas Rhoads (ev3rl0ng[at]gmail[dot]com) - Removed Test-Key function as it is no longer used.
 
     TODO
     - HTML output need to be implemented
@@ -475,15 +476,4 @@ param (
     # restore the original color
     $host.UI.RawUI.ForegroundColor = $fc
 
-}
-
-
-function Test-Key([string]$path, [string]$key) {
-
-    #Source
-    #http://blog.smoothfriction.nl/archive/2011/01/18/powershell-detecting-installed-net-versions.aspx
-
-    if(!(Test-Path -Path $path)) { return $false }
-    if ((Get-ItemProperty -Path $path).$key -eq $null) { return $false }
-    return $true
 }
