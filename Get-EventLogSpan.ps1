@@ -97,6 +97,8 @@ Function Get-EventLogSpan {
     - 0.9.1 - 2016-02-17 - Thomas Rhoads (ev3rl0ng[at]gmail[dot]com) - moved .net check to Begin section and added support for .Net > 3.5
     - 0.9.2 - 2016-02-17 - Thomas Rhoads (ev3rl0ng[at]gmail[dot]com) - Removed Test-Key function as it is no longer used.
     - 1.0.0 - 2016-02-17 - The license changed to MIT, the parameter OutputDirection removed, the function reformatted, by default output is returned as PowerShell object
+    - 1.0.1 - 2016-02-18 - Thomas Rhoads (ev3rl0ng[at]gmail[dot]com) - Added - to Property in Select-Object portion of .NET 3.5 Check. Fixed Bug.
+    - 1.1.0 - 2016-02-18 - Thomas Rhoads (ev3rl0ng[at]gmail[dot]com) - Added basic ping test to prevent error deluge when remote computer is unreachable.
 
     LICENSE
     Copyright (c) 2016 Wojciech Sciesinski
@@ -159,7 +161,7 @@ Begin {
         Get-ChildItem 'HKLM:\SOFTWARE\Microsoft\NET Framework Setup\NDP' -recurse |
         Get-ItemProperty -name Version,Release -ErrorAction SilentlyContinue |
         Where-Object -FilterScript { $_.PSChildName -match '^(?!S)\p{L}'} |
-        Select-Object Property PSChildName, Version, Release |
+        Select-Object -Property PSChildName, Version, Release |
         ForEach-Object {
             if ($_.Version -gt 3.5) {
                 $boolNetFXVersionOK = $true
@@ -187,6 +189,15 @@ Begin {
 }
 
 Process {
+
+    If (!$(Test-Connection -ComputerName $ComputerName -Quiet -Count 1)) {
+
+        Write-Error "Computer $($ComputerName) is unreachable."
+
+        Break
+
+    }
+
 
     If ($LogsScope -eq 'Classic') {
 
